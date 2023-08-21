@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import google from '../assets/google.png';
-import { auth } from '../firebase/config';
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithRedirect,
 } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { auth, provider } from '../firebase/config';
+import { toast } from 'react-toastify';
 
 const Auth = () => {
   const [signUp, setSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [isError, setIsError] = useState(null);
-  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,28 +21,32 @@ const Auth = () => {
 
     if (signUp) {
       // kaydol > kullanıcı oluşturucaz
-      createUserWithEmailAndPassword(auth, email, pass)
-        .then(() => navigate('/home'))
-        .catch((err) => alert(err.code));
+      createUserWithEmailAndPassword(auth, email, pass).catch((err) =>
+        toast.error(err.code)
+      );
     } else {
       // giriş yap > varolan hesaba giriş
-      signInWithEmailAndPassword(auth, email, pass)
-        .then(() => navigate('/home'))
-        .catch((err) => {
-          alert(err.code);
-          // şifre hatası varsa state'i güncelle
-          if (err.code === 'auth/wrong-password') {
-            setIsError(true);
-          }
-        });
+      signInWithEmailAndPassword(auth, email, pass).catch((err) => {
+        toast.error(err.code);
+        // şifre hatası varsa state'i güncelle
+        if (err.code === 'auth/wrong-password') {
+          setIsError(true);
+        }
+      });
     }
   };
 
   // şifre sıfırlar
   const handleReset = () => {
     sendPasswordResetEmail(auth, email)
-      .then(() => alert('Maİlinizi kontrol edin'))
-      .catch((err) => alert(err.code));
+      .then(() => toast.info('Lütfen Mailinizi kontrol edin.'))
+      .catch((err) => toast.error(err.code));
+  };
+
+  const handleGoogle = () => {
+    signInWithRedirect(auth, provider).catch((err) =>
+      toast.error(err)
+    );
   };
 
   return (
@@ -56,7 +60,10 @@ const Auth = () => {
           Twitter'a giriş yap
         </h1>
 
-        <div className="flex items-center gap-3 bg-white text-black py-2 px-10 rounded-full cursor-pointer hover:bg-gray-200">
+        <div
+          onClick={handleGoogle}
+          className="flex items-center gap-3 bg-white text-black py-2 px-10 rounded-full cursor-pointer hover:bg-gray-200"
+        >
           <img className="h-[20px]" src={google} />
           <p className="whitespace-nowrap">Google ile giriş yap</p>
         </div>

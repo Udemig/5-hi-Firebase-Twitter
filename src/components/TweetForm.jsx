@@ -1,4 +1,4 @@
-import { auth, db } from '../firebase/config';
+import { auth, db, storage } from '../firebase/config';
 import dProfile from '../assets/default.png';
 import { BsCardImage } from 'react-icons/bs';
 import {
@@ -6,19 +6,50 @@ import {
   collection,
   serverTimestamp,
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { toast } from 'react-toastify';
 
 const TweetForm = () => {
   // kolleksiyonun ref alama
   const tweetsCol = collection(db, 'tweets');
 
-  const handleSubmit = (e) => {
+  // resmi yükler ve url'ini döndürür
+  const uploadImage = async (image) => {
+    if (!image) return null;
+
+    // sotage'da dosya yer ayarlama
+    const storageRef = ref(
+      storage,
+      `${new Date().getTime()}${image.name}`
+    );
+
+    // dosyayı yükleme
+    const url = await uploadBytes(storageRef, image)
+      // yüklemenin bittiği anda resmin url'ne erişme
+      .then((response) => getDownloadURL(response.ref));
+
+    //fonksiyonun çağrıldığı yere url gönderme
+    return url;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const textContent = e.target[0].value;
     const imageContent = e.target[1].files[0];
 
+    // yazı varmı kontrol etme
+    if (!textContent) {
+      toast.info('Tweet içeriği ekleyin..');
+      return;
+    }
+
+    // resmi stoage'ekleyip url'ne erişir
+    const url = await uploadImage(imageContent);
+
     // kolleksiyona döküman ekler
     addDoc(tweetsCol, {
       textContent,
+      imageContent: url,
       createdAt: serverTimestamp(),
       user: {
         id: auth.currentUser.uid,
@@ -29,6 +60,10 @@ const TweetForm = () => {
       },
       likes: [],
     });
+
+    // inputları temizleme
+    e.target[0].value = '';
+    e.target[1].value = null;
   };
 
   return (

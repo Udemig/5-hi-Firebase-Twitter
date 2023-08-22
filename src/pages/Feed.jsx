@@ -10,7 +10,7 @@ const Feed = () => {
 
         <Main />
 
-        <Aside />
+        {/* <Aside /> */}
       </div>
     </div>
   );

@@ -9,12 +9,18 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  deleteDoc,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { useEffect, useState } from 'react';
+import moment from 'moment/moment';
+import 'moment/locale/tr';
 
 const Post = ({ tweet }) => {
   const [isLiked, setIsLiked] = useState(false);
+
+  // tarih bilgisne erişme
+  const date = tweet.createdAt?.toDate();
 
   // kullanıcın tweet'i beğenip beğenmediğini kontrol etme
   useEffect(() => {
@@ -39,6 +45,14 @@ const Post = ({ tweet }) => {
     });
   };
 
+  // twiti kaldırır
+  const handleDelete = () => {
+    // tweet'İn referansına erişme
+    const tweetRef = doc(db, 'tweets', tweet.id);
+    // doc kaldırma
+    deleteDoc(tweetRef);
+  };
+
   return (
     <div className="flex gap-3 p-3 border-b-[0.5px] border-gray-600 space ">
       <img
@@ -53,15 +67,23 @@ const Post = ({ tweet }) => {
             <p className="text-gray-400">
               @{tweet?.user?.name?.toLowerCase()}
             </p>
-            <p className="text-gray-400">1 saat önce</p>
+            <p className="text-gray-400">{moment(date).fromNow()}</p>
           </div>
-          <div className="p-2 rounded-full transition cursor-pointer hover:bg-gray-700">
-            <BsThreeDots />
-          </div>
+
+          {tweet.user.id === auth.currentUser.uid && (
+            <div
+              onClick={handleDelete}
+              className="p-2 rounded-full transition cursor-pointer hover:bg-gray-700"
+            >
+              <BsThreeDots />
+            </div>
+          )}
         </div>
 
         <div className="my-3">
           <p>{tweet.textContent}</p>
+          {/* eğerki resim varsa onu ekrana bas */}
+          {tweet.imageContent && <img src={tweet.imageContent} />}
         </div>
 
         <div className="flex justify-between">
